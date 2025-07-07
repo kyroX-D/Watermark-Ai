@@ -1,0 +1,55 @@
+# ---------------------
+# 📁 Node.js (Frontend)
+# ---------------------
+node_modules/
+dist/
+.env
+.env.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vite/
+.cache/
+.DS_Store
+
+# ---------------------
+# 🐍 Python (Backend)
+# ---------------------
+__pycache__/
+*.py[cod]
+*.sqlite3
+instance/
+.env
+*.log
+*.egg-info/
+venv/
+env/
+.venv/
+.Python
+.mypy_cache/
+.pytest_cache/
+coverage/
+htmlcov/
+*.cover
+*.db
+*.sqlite
+
+# ---------------------
+# 🐳 Docker
+# ---------------------
+*.pid
+*.sock
+
+# ---------------------
+# 📂 VSCode + Editor
+# ---------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ---------------------
+# ⚙️ OS / Misc
+# ---------------------
+.DS_Store
+Thumbs.db
