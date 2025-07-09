@@ -1,0 +1,42 @@
+{
+  "Arial": {
+    "downloaded_at": "2025-07-08T03:30:27.790470",
+    "size": 147528,
+    "source": "url"
+  },
+  "Courier New": {
+    "downloaded_at": "2025-07-08T03:30:33.589356",
+    "size": 125748,
+    "source": "url"
+  },
+  "Open Sans": {
+    "downloaded_at": "2025-07-09T05:37:17.859200",
+    "size": 147528,
+    "source": "url"
+  },
+  "Times New Roman": {
+    "downloaded_at": "2025-07-09T05:37:19.132783",
+    "size": 282844,
+    "source": "url"
+  },
+  "Verdana": {
+    "downloaded_at": "2025-07-09T05:37:22.321247",
+    "size": 276932,
+    "source": "url"
+  },
+  "Montserrat": {
+    "downloaded_at": "2025-07-09T05:37:23.855705",
+    "size": 445928,
+    "source": "url"
+  },
+  "Roboto": {
+    "downloaded_at": "2025-07-09T05:37:26.153921",
+    "size": 515100,
+    "source": "url"
+  },
+  "Lato": {
+    "downloaded_at": "2025-07-09T05:37:26.827430",
+    "size": 656568,
+    "source": "url"
+  }
+}

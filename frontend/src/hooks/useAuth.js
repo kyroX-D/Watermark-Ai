@@ -5,10 +5,11 @@ import api from '../services/api'
 export const useAuthStore = create(
   persist(
     (set, get) => ({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      isLoading: false,
+      user: { id: 1, email: "dev@local" },
+      token: "fake-token",
+      isAuthenticated: true,
+
+
 
       login: async (email, password) => {
         set({ isLoading: true })

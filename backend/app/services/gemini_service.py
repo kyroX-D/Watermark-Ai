@@ -1,3 +1,5 @@
+# File: backend/app/services/gemini_service.py
+
 import google.generativeai as genai
 from PIL import Image
 import io
@@ -16,33 +18,79 @@ class GeminiService:
     async def analyze_image_for_watermark(
         self, image_bytes: bytes, watermark_text: str
     ) -> Dict:
-        """Analyze image and determine optimal watermark placement"""
+        """Enhanced image analysis for optimal watermark placement"""
 
         # Convert bytes to PIL Image
         image = Image.open(io.BytesIO(image_bytes))
 
         prompt = f"""
-        Analyze this image and determine the best location to embed a watermark with the text "{watermark_text}".
-        The watermark should be integrated naturally into the image content (e.g., as graffiti on a wall, 
-        text on a sign, or blended into textures like grass or water).
+        Analyze this image for watermark placement with the text "{watermark_text}".
+        Consider the following aspects:
         
-        Provide your response in JSON format with:
+        1. Identify optimal placement locations that are:
+           - Visible to humans but difficult for AI to detect and remove
+           - Integrated naturally into the image content
+           - Not covering important subjects or focal points
+        
+        2. Suggest integration methods:
+           - 'graffiti': If there are walls, surfaces suitable for graffiti-style text
+           - 'sign': If there are existing signs, boards, or flat surfaces
+           - 'texture': If the watermark can blend with textures (water, sky, grass)
+           - 'overlay': Standard transparent overlay
+        
+        3. Analyze image characteristics:
+           - Dominant colors and their hex values
+           - Brightness levels in different areas
+           - Texture complexity
+           - Main subjects and their locations
+        
+        4. For robustness against AI removal:
+           - Identify areas with high texture variance
+           - Suggest positions that overlap multiple visual elements
+           - Recommend optimal opacity based on background
+        
+        Provide your response in JSON format:
         {{
             "placement_suggestions": [
                 {{
                     "location": "description of where to place",
                     "x": percentage from left (0-100),
                     "y": percentage from top (0-100),
-                    "integration_method": "how to blend (e.g., 'graffiti', 'sign', 'texture')",
-                    "color": "suggested hex color",
+                    "integration_method": "graffiti/sign/texture/overlay",
+                    "color": "suggested hex color for best visibility",
                     "opacity": suggested opacity (0-1),
                     "size": "small/medium/large",
-                    "rotation": angle in degrees
+                    "rotation": angle in degrees (-45 to 45),
+                    "reasoning": "why this placement is optimal"
                 }}
             ],
-            "scene_description": "brief description of the image",
-            "dominant_colors": ["hex colors"],
-            "suggested_style": "artistic style for watermark"
+            "scene_analysis": {{
+                "description": "brief description of the image",
+                "main_subjects": ["list of main subjects"],
+                "avoid_areas": [
+                    {{"x1": 0, "y1": 0, "x2": 100, "y2": 100, "reason": "face/important object"}}
+                ]
+            }},
+            "dominant_colors": ["#hex1", "#hex2", "#hex3"],
+            "brightness_map": {{
+                "overall": "dark/medium/bright",
+                "top_left": "dark/medium/bright",
+                "top_right": "dark/medium/bright",
+                "bottom_left": "dark/medium/bright",
+                "bottom_right": "dark/medium/bright",
+                "center": "dark/medium/bright"
+            }},
+            "texture_analysis": {{
+                "complexity": "low/medium/high",
+                "best_blend_areas": [
+                    {{"x": 50, "y": 50, "description": "textured area description"}}
+                ]
+            }},
+            "ai_resistance_score": 8.5,
+            "suggested_style": "artistic style for watermark",
+            "protection_recommendations": [
+                "specific recommendations for maximum protection"
+            ]
         }}
         """
 
@@ -51,32 +99,127 @@ class GeminiService:
 
             # Parse JSON from response
             response_text = response.text
-            # Extract JSON from response (handle markdown code blocks)
             if "```json" in response_text:
                 json_start = response_text.find("```json") + 7
                 json_end = response_text.find("```", json_start)
                 response_text = response_text[json_start:json_end]
 
             analysis = json.loads(response_text.strip())
+            
+            # Ensure all required fields exist
+            self._ensure_analysis_completeness(analysis)
+            
             return analysis
 
         except Exception as e:
             print(f"Gemini analysis error: {e}")
-            # Return default placement if analysis fails
-            return {
-                "placement_suggestions": [
-                    {
-                        "location": "bottom-right corner",
-                        "x": 80,
-                        "y": 90,
-                        "integration_method": "overlay",
-                        "color": "#FFFFFF",
-                        "opacity": 0.7,
-                        "size": "medium",
-                        "rotation": 0,
-                    }
-                ],
-                "scene_description": "Image analysis unavailable",
-                "dominant_colors": ["#FFFFFF", "#000000"],
-                "suggested_style": "standard",
+            # Return comprehensive default analysis
+            return self._get_default_analysis()
+
+    def _ensure_analysis_completeness(self, analysis: Dict) -> None:
+        """Ensure all required fields exist in analysis"""
+        # Default placement if missing
+        if "placement_suggestions" not in analysis or not analysis["placement_suggestions"]:
+            analysis["placement_suggestions"] = [{
+                "location": "bottom-right corner",
+                "x": 80,
+                "y": 90,
+                "integration_method": "overlay",
+                "color": "#FFFFFF",
+                "opacity": 0.7,
+                "size": "medium",
+                "rotation": 0,
+                "reasoning": "Standard placement for visibility"
+            }]
+        
+        # Ensure scene analysis
+        if "scene_analysis" not in analysis:
+            analysis["scene_analysis"] = {
+                "description": "Image analysis unavailable",
+                "main_subjects": [],
+                "avoid_areas": []
             }
+        
+        # Ensure brightness map
+        if "brightness_map" not in analysis:
+            analysis["brightness_map"] = {
+                "overall": "medium",
+                "top_left": "medium",
+                "top_right": "medium",
+                "bottom_left": "medium",
+                "bottom_right": "medium",
+                "center": "medium"
+            }
+        
+        # Ensure texture analysis
+        if "texture_analysis" not in analysis:
+            analysis["texture_analysis"] = {
+                "complexity": "medium",
+                "best_blend_areas": []
+            }
+        
+        # Ensure protection info
+        if "ai_resistance_score" not in analysis:
+            analysis["ai_resistance_score"] = 7.0
+        
+        if "protection_recommendations" not in analysis:
+            analysis["protection_recommendations"] = [
+                "Use semi-transparent overlay for better integration",
+                "Consider multiple smaller watermarks for redundancy"
+            ]
+
+    def _get_default_analysis(self) -> Dict:
+        """Return comprehensive default analysis when API fails"""
+        return {
+            "placement_suggestions": [
+                {
+                    "location": "bottom-right corner",
+                    "x": 80,
+                    "y": 90,
+                    "integration_method": "overlay",
+                    "color": "#FFFFFF",
+                    "opacity": 0.7,
+                    "size": "medium",
+                    "rotation": 0,
+                    "reasoning": "Standard placement with good visibility"
+                },
+                {
+                    "location": "top-left corner",
+                    "x": 20,
+                    "y": 10,
+                    "integration_method": "overlay",
+                    "color": "#FFFFFF",
+                    "opacity": 0.6,
+                    "size": "small",
+                    "rotation": 0,
+                    "reasoning": "Alternative placement for redundancy"
+                }
+            ],
+            "scene_analysis": {
+                "description": "Image analysis unavailable",
+                "main_subjects": [],
+                "avoid_areas": []
+            },
+            "dominant_colors": ["#FFFFFF", "#000000", "#808080"],
+            "brightness_map": {
+                "overall": "medium",
+                "top_left": "medium",
+                "top_right": "medium",
+                "bottom_left": "medium",
+                "bottom_right": "medium",
+                "center": "medium"
+            },
+            "texture_analysis": {
+                "complexity": "medium",
+                "best_blend_areas": [
+                    {"x": 50, "y": 50, "description": "Center area"}
+                ]
+            },
+            "ai_resistance_score": 7.0,
+            "suggested_style": "standard",
+            "protection_recommendations": [
+                "Use multiple watermark layers",
+                "Apply with varying opacity",
+                "Consider contextual integration"
+            ]
+        }
