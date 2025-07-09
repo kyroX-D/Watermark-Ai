@@ -1,0 +1,61 @@
+# render.yaml
+services:
+  # Backend API Service
+  - type: web
+    name: watermark-ai-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: watermark-ai-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: '["https://watermark-ai-frontend.onrender.com", "http://localhost:5173"]'
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: OXAPAY_MERCHANT_ID
+        sync: false
+      - key: OXAPAY_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        value: https://watermark-ai-frontend.onrender.com
+      - key: API_URL
+        value: https://watermark-ai-backend.onrender.com
+
+  # Frontend Static Site
+  - type: web
+    name: watermark-ai-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    pullRequestPreviewsEnabled: false
+    envVars:
+      - key: NODE_VERSION
+        value: 18.17.0
+      - key: VITE_API_URL
+        value: https://watermark-ai-backend.onrender.com
+      - key: VITE_STRIPE_PUBLIC_KEY
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+databases:
+  - name: watermark-ai-db
+    databaseName: watermark_ai
+    user: watermark_user
+    region: oregon # or your preferred region
+    plan: starter # or 'standard' for production
