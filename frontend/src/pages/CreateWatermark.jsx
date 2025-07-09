@@ -408,6 +408,9 @@ function CreateWatermark() {
                 </div>
 
                 {/* Opacity with Modern Slider */}
+// Ersetze den problematischen Bereich (ca. Zeile 420-440) mit diesem Code:
+
+                {/* Opacity with Modern Slider */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="flex items-center text-sm font-medium">
@@ -425,10 +428,9 @@ function CreateWatermark() {
                           })}
                           className="mr-2"
                         />
-                                                  <span className="flex items-center gap-1">
-                            <Sparkles className="w-3 h-3" />
-                            Auto Opacity
-                          </span>
+                        <span className="flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" />
+                          Auto Opacity
                         </span>
                       </label>
                     )}
