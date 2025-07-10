@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum
+# backend/app/models/user.py
+
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Enum, ForeignKey
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import enum
@@ -23,6 +25,11 @@ class User(Base):
     is_verified = Column(Boolean, default=False)
     google_id = Column(String, unique=True, nullable=True)
 
+    # Admin fields
+    is_admin = Column(Boolean, default=False, index=True)
+    admin_granted_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    admin_granted_at = Column(DateTime, nullable=True)
+
     # Subscription
     subscription_tier = Column(Enum(SubscriptionTier), default=SubscriptionTier.FREE)
     subscription_end_date = Column(DateTime, nullable=True)
@@ -44,3 +51,6 @@ class User(Base):
     payments = relationship(
         "Payment", back_populates="user", cascade="all, delete-orphan"
     )
+    
+    # Admin who granted admin rights to this user
+    admin_granter = relationship("User", foreign_keys=[admin_granted_by], remote_side=[id])

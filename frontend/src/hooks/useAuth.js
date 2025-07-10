@@ -5,11 +5,16 @@ import api from '../services/api'
 export const useAuthStore = create(
   persist(
     (set, get) => ({
-      user: { id: 1, email: "dev@local" },
-      token: "fake-token",
-      isAuthenticated: true,
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
 
-
+      // Check if current user is admin
+      isAdmin: () => {
+        const user = get().user;
+        return user?.is_admin === true || user?.email === 'your-email@example.com'; // Replace with your admin email
+      },
 
       login: async (email, password) => {
         set({ isLoading: true })
@@ -62,6 +67,8 @@ export const useAuthStore = create(
           token: null,
           isAuthenticated: false
         })
+        // Redirect to home
+        window.location.href = '/'
       },
 
       fetchUser: async () => {

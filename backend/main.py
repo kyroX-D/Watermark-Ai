@@ -4,10 +4,17 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import uvicorn
+import logging
 
-from app.api.endpoints import auth, users, watermarks, subscriptions, webhooks
+from app.api.endpoints import auth, users, watermarks, subscriptions, webhooks, admin
 from app.core.config import settings
 from app.core.database import engine, Base
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -36,6 +43,7 @@ app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(watermarks.router, prefix="/api/watermarks", tags=["watermarks"])
 app.include_router(subscriptions.router, prefix="/api/subscriptions", tags=["subscriptions"])
 app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])
+app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 @app.get("/")
 async def root():

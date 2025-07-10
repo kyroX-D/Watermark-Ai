@@ -7,20 +7,31 @@ import {
   Settings,
   CreditCard,
   LogOut,
+  Shield,
 } from "lucide-react";
 import { useAuthStore } from "../../hooks/useAuth";
 
-const menuItems = [
-  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/create", label: "Create Watermark", icon: Droplets },
-  { path: "/my-images", label: "My Images", icon: Image },
-  { path: "/pricing", label: "Subscription", icon: CreditCard },
-  { path: "/settings", label: "Settings", icon: Settings },
-];
-
 export default function Sidebar() {
   const location = useLocation();
-  const { logout } = useAuthStore();
+  const { logout, isAdmin } = useAuthStore();
+
+  const menuItems = [
+    { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { path: "/create", label: "Create Watermark", icon: Droplets },
+    { path: "/my-images", label: "My Images", icon: Image },
+    { path: "/pricing", label: "Subscription", icon: CreditCard },
+    { path: "/settings", label: "Settings", icon: Settings },
+  ];
+
+  // Add admin menu item if user is admin
+  if (isAdmin()) {
+    menuItems.push({
+      path: "/admin",
+      label: "Admin Panel",
+      icon: Shield,
+      isAdmin: true
+    });
+  }
 
   return (
     <aside className="w-64 min-h-screen bg-white dark:bg-dark-surface border-r border-gray-200 dark:border-dark-border">
@@ -52,10 +63,16 @@ export default function Sidebar() {
                       ? "text-primary-600 dark:text-primary-400"
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
                   }
+                  ${item.isAdmin ? "border-t border-gray-200 dark:border-gray-700 mt-4 pt-4" : ""}
                 `}
                 >
                   <Icon className="w-5 h-5" />
                   <span className="font-medium">{item.label}</span>
+                  {item.isAdmin && (
+                    <span className="ml-auto text-xs bg-primary-600 text-white px-2 py-0.5 rounded">
+                      Admin
+                    </span>
+                  )}
                 </div>
               </Link>
             );

@@ -11,6 +11,7 @@ import CreateWatermark from "./pages/CreateWatermark";
 import MyImages from "./pages/MyImages";
 import Settings from "./pages/Settings";
 import Pricing from "./pages/Pricing";
+import AdminPanel from "./pages/AdminPanel";
 
 // Components
 import ProtectedRoute from "./components/common/ProtectedRoute";
@@ -38,6 +39,7 @@ function App() {
             <Route path="/create" element={<CreateWatermark />} />
             <Route path="/my-images" element={<MyImages />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/admin" element={<AdminPanel />} />
           </Route>
         </Routes>
 
