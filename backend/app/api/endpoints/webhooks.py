@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Request, HTTPException, Header
+# File: backend/app/api/endpoints/webhooks.py
+
+from fastapi import APIRouter, Request, HTTPException, Header, Depends
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 import hmac

@@ -1,3 +1,5 @@
+# File: backend/app/api/endpoints/auth.py
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -31,17 +33,22 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         hashed_password=get_password_hash(user_data.password),
     )
 
-    # Create Stripe customer
-    stripe_service = StripeService()
-    user.stripe_customer_id = await stripe_service.create_customer(
-        user_data.email, user_data.username
-    )
+    # Create Stripe customer if API key is configured
+    if settings.STRIPE_SECRET_KEY and settings.STRIPE_SECRET_KEY != "sk_test_dummy":
+        stripe_service = StripeService()
+        try:
+            user.stripe_customer_id = await stripe_service.create_customer(
+                user_data.email, user_data.username
+            )
+        except Exception as e:
+            print(f"Stripe customer creation failed: {e}")
+            # Continue without Stripe customer ID
 
     db.add(user)
     db.commit()
     db.refresh(user)
 
-    return UserResponse.from_orm(user)
+    return UserResponse.model_validate(user)
 
 
 @router.post("/login", response_model=Token)
@@ -69,6 +76,12 @@ async def login(
 @router.get("/google")
 async def google_login():
     """Initiate Google OAuth login"""
+    if not settings.GOOGLE_CLIENT_ID or settings.GOOGLE_CLIENT_ID == "dummy-client-id":
+        raise HTTPException(
+            status_code=500,
+            detail="Google OAuth not configured. Please contact support."
+        )
+    
     google_auth_url = (
         f"https://accounts.google.com/o/oauth2/v2/auth?"
         f"client_id={settings.GOOGLE_CLIENT_ID}"
@@ -82,6 +95,12 @@ async def google_login():
 @router.get("/google/callback")
 async def google_callback(code: str, db: Session = Depends(get_db)):
     """Handle Google OAuth callback"""
+    if not settings.GOOGLE_CLIENT_SECRET or settings.GOOGLE_CLIENT_SECRET == "dummy-client-secret":
+        raise HTTPException(
+            status_code=500,
+            detail="Google OAuth not configured. Please contact support."
+        )
+    
     # Exchange code for token
     import httpx
 
@@ -94,16 +113,36 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
         "grant_type": "authorization_code",
     }
 
-    async with httpx.AsyncClient() as client:
-        token_response = await client.post(token_url, data=token_data)
-        token_json = token_response.json()
+    try:
+        async with httpx.AsyncClient() as client:
+            token_response = await client.post(token_url, data=token_data)
+            
+            if token_response.status_code != 200:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Failed to exchange code for token"
+                )
+            
+            token_json = token_response.json()
 
-        # Get user info
-        user_info_response = await client.get(
-            "https://www.googleapis.com/oauth2/v2/userinfo",
-            headers={"Authorization": f"Bearer {token_json['access_token']}"},
+            # Get user info
+            user_info_response = await client.get(
+                "https://www.googleapis.com/oauth2/v2/userinfo",
+                headers={"Authorization": f"Bearer {token_json['access_token']}"},
+            )
+            
+            if user_info_response.status_code != 200:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Failed to get user info from Google"
+                )
+            
+            user_info = user_info_response.json()
+    except httpx.RequestError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error connecting to Google: {str(e)}"
         )
-        user_info = user_info_response.json()
 
     # Find or create user
     user = db.query(User).filter(User.google_id == user_info["id"]).first()
@@ -120,11 +159,15 @@ async def google_callback(code: str, db: Session = Depends(get_db)):
                 is_verified=True,
             )
 
-            # Create Stripe customer
-            stripe_service = StripeService()
-            user.stripe_customer_id = await stripe_service.create_customer(
-                user_info["email"], user_info.get("name", user_info["email"])
-            )
+            # Create Stripe customer if configured
+            if settings.STRIPE_SECRET_KEY and settings.STRIPE_SECRET_KEY != "sk_test_dummy":
+                stripe_service = StripeService()
+                try:
+                    user.stripe_customer_id = await stripe_service.create_customer(
+                        user_info["email"], user_info.get("name", user_info["email"])
+                    )
+                except Exception as e:
+                    print(f"Stripe customer creation failed: {e}")
 
             db.add(user)
         else:

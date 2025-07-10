@@ -1,3 +1,5 @@
+# File: backend/app/api/endpoints/users.py
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -16,7 +18,7 @@ router = APIRouter()
 @router.get("/me", response_model=UserResponse)
 async def get_current_user(current_user: User = Depends(get_current_active_user)):
     """Get current user information"""
-    return UserResponse.from_orm(current_user)
+    return UserResponse.model_validate(current_user)
 
 
 @router.put("/me", response_model=UserResponse)
@@ -45,7 +47,7 @@ async def update_user(
     db.commit()
     db.refresh(current_user)
 
-    return UserResponse.from_orm(current_user)
+    return UserResponse.model_validate(current_user)
 
 
 @router.post("/change-password")
@@ -66,12 +68,6 @@ async def change_password(
         password_data.current_password, current_user.hashed_password
     ):
         raise HTTPException(status_code=400, detail="Current password is incorrect")
-
-    # Validate new password
-    if len(password_data.new_password) < 8:
-        raise HTTPException(
-            status_code=400, detail="New password must be at least 8 characters long"
-        )
 
     # Update password
     current_user.hashed_password = get_password_hash(password_data.new_password)

@@ -12,16 +12,28 @@ from ..core.config import settings
 
 class GeminiService:
     def __init__(self):
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel(settings.GEMINI_MODEL)
+        if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY != "dummy-api-key":
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            self.model = genai.GenerativeModel(settings.GEMINI_MODEL)
+        else:
+            self.model = None
+            print("Warning: Gemini API key not configured. Using default analysis.")
 
     async def analyze_image_for_watermark(
         self, image_bytes: bytes, watermark_text: str
     ) -> Dict:
         """Enhanced image analysis for optimal watermark placement"""
+        
+        # If no API key configured, return default analysis
+        if not self.model:
+            return self._get_default_analysis()
 
         # Convert bytes to PIL Image
-        image = Image.open(io.BytesIO(image_bytes))
+        try:
+            image = Image.open(io.BytesIO(image_bytes))
+        except Exception as e:
+            print(f"Error opening image: {e}")
+            return self._get_default_analysis()
 
         prompt = f"""
         Analyze this image for watermark placement with the text "{watermark_text}".
@@ -111,9 +123,14 @@ class GeminiService:
             
             return analysis
 
+        except json.JSONDecodeError as e:
+            print(f"Gemini JSON parse error: {e}")
+            return self._get_default_analysis()
+        except AttributeError as e:
+            print(f"Gemini response error: {e}")
+            return self._get_default_analysis()
         except Exception as e:
-            print(f"Gemini analysis error: {e}")
-            # Return comprehensive default analysis
+            print(f"Gemini API error: {type(e).__name__}: {e}")
             return self._get_default_analysis()
 
     def _ensure_analysis_completeness(self, analysis: Dict) -> None:
@@ -132,6 +149,25 @@ class GeminiService:
                 "reasoning": "Standard placement for visibility"
             }]
         
+        # Validate placement suggestions
+        for suggestion in analysis["placement_suggestions"]:
+            # Ensure all required fields
+            suggestion.setdefault("location", "bottom-right corner")
+            suggestion.setdefault("x", 80)
+            suggestion.setdefault("y", 90)
+            suggestion.setdefault("integration_method", "overlay")
+            suggestion.setdefault("color", "#FFFFFF")
+            suggestion.setdefault("opacity", 0.7)
+            suggestion.setdefault("size", "medium")
+            suggestion.setdefault("rotation", 0)
+            suggestion.setdefault("reasoning", "Default placement")
+            
+            # Validate values
+            suggestion["x"] = max(0, min(100, int(suggestion.get("x", 80))))
+            suggestion["y"] = max(0, min(100, int(suggestion.get("y", 90))))
+            suggestion["opacity"] = max(0.1, min(1.0, float(suggestion.get("opacity", 0.7))))
+            suggestion["rotation"] = max(-45, min(45, int(suggestion.get("rotation", 0))))
+        
         # Ensure scene analysis
         if "scene_analysis" not in analysis:
             analysis["scene_analysis"] = {
@@ -139,6 +175,14 @@ class GeminiService:
                 "main_subjects": [],
                 "avoid_areas": []
             }
+        else:
+            analysis["scene_analysis"].setdefault("description", "Image")
+            analysis["scene_analysis"].setdefault("main_subjects", [])
+            analysis["scene_analysis"].setdefault("avoid_areas", [])
+        
+        # Ensure colors
+        if "dominant_colors" not in analysis or not analysis["dominant_colors"]:
+            analysis["dominant_colors"] = ["#FFFFFF", "#000000", "#808080"]
         
         # Ensure brightness map
         if "brightness_map" not in analysis:
@@ -150,6 +194,12 @@ class GeminiService:
                 "bottom_right": "medium",
                 "center": "medium"
             }
+        else:
+            # Validate brightness values
+            valid_brightness = ["dark", "medium", "bright"]
+            for key in analysis["brightness_map"]:
+                if analysis["brightness_map"][key] not in valid_brightness:
+                    analysis["brightness_map"][key] = "medium"
         
         # Ensure texture analysis
         if "texture_analysis" not in analysis:
@@ -157,10 +207,19 @@ class GeminiService:
                 "complexity": "medium",
                 "best_blend_areas": []
             }
+        else:
+            analysis["texture_analysis"].setdefault("complexity", "medium")
+            analysis["texture_analysis"].setdefault("best_blend_areas", [])
         
         # Ensure protection info
         if "ai_resistance_score" not in analysis:
             analysis["ai_resistance_score"] = 7.0
+        else:
+            # Validate score
+            analysis["ai_resistance_score"] = max(1.0, min(10.0, float(analysis.get("ai_resistance_score", 7.0))))
+        
+        if "suggested_style" not in analysis:
+            analysis["suggested_style"] = "standard"
         
         if "protection_recommendations" not in analysis:
             analysis["protection_recommendations"] = [
