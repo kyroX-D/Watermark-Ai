@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict  # Added Dict import
 import uuid
 import os
 from datetime import datetime, timedelta
@@ -190,7 +190,8 @@ async def create_watermark(
     db.commit()
     db.refresh(watermark)
 
-    return WatermarkResponse.from_orm(watermark)
+    # Fixed: Use model_validate instead of from_orm
+    return WatermarkResponse.model_validate(watermark)
 
 
 @router.get("/my-watermarks", response_model=List[WatermarkResponse])
@@ -210,7 +211,8 @@ async def get_my_watermarks(
         .all()
     )
 
-    return [WatermarkResponse.from_orm(w) for w in watermarks]
+    # Fixed: Use model_validate instead of from_orm
+    return [WatermarkResponse.model_validate(w) for w in watermarks]
 
 
 @router.delete("/{watermark_id}")
@@ -241,7 +243,7 @@ async def delete_watermark(
     return {"message": "Watermark deleted successfully"}
 
 
-@router.get("/fonts", response_model=List[Dict])
+@router.get("/fonts", response_model=List[Dict[str, str]])  # Fixed: properly typed Dict
 async def get_available_fonts(
     current_user: User = Depends(get_current_active_user),
 ):
@@ -258,7 +260,7 @@ async def get_available_fonts(
         available_fonts.append({
             "name": font,
             "tier": "free",
-            "available": True
+            "available": "true"  # Return as string for JSON
         })
     
     # Add pro fonts
@@ -266,7 +268,7 @@ async def get_available_fonts(
         available_fonts.append({
             "name": font,
             "tier": "pro",
-            "available": current_user.subscription_tier.value in ["pro", "elite"]
+            "available": "true" if current_user.subscription_tier.value in ["pro", "elite"] else "false"
         })
     
     # Add elite fonts
@@ -274,7 +276,7 @@ async def get_available_fonts(
         available_fonts.append({
             "name": font,
             "tier": "elite",
-            "available": current_user.subscription_tier.value == "elite"
+            "available": "true" if current_user.subscription_tier.value == "elite" else "false"
         })
     
     return available_fonts

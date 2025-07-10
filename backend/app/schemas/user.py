@@ -84,8 +84,7 @@ class UserResponse(UserBase):
     daily_usage: int
 
     class Config:
-        orm_mode = True
-        from_attributes = True
+        from_attributes = True  # Fixed: removed orm_mode
 
 
 class UserStats(BaseModel):
