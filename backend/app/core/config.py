@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Optional
 
 
 class Settings(BaseSettings):
@@ -19,26 +19,26 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3000"]
 
-    # Google OAuth
-    GOOGLE_CLIENT_ID: str
-    GOOGLE_CLIENT_SECRET: str
+    # Google OAuth (Optional - set when ready to use)
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/auth/google/callback"
 
-    # Gemini Vision API
-    GEMINI_API_KEY: str
+    # Gemini Vision API (Optional - set when ready to use)
+    GEMINI_API_KEY: Optional[str] = None
     GEMINI_MODEL: str = "gemini-1.5-flash"
 
-    # Stripe
-    STRIPE_SECRET_KEY: str
-    STRIPE_WEBHOOK_SECRET: str
+    # Stripe (Optional - set when ready to use)
+    STRIPE_SECRET_KEY: Optional[str] = None
+    STRIPE_WEBHOOK_SECRET: Optional[str] = None
     STRIPE_PRICE_FREE: str = "price_free"
     STRIPE_PRICE_PRO: str = "price_pro_id"
     STRIPE_PRICE_ELITE: str = "price_elite_id"
 
-    # OxaPay
-    OXAPAY_MERCHANT_ID: str
-    OXAPAY_API_KEY: str
-    OXAPAY_WEBHOOK_SECRET: str
+    # OxaPay (Optional - set when ready to use)
+    OXAPAY_MERCHANT_ID: Optional[str] = None
+    OXAPAY_API_KEY: Optional[str] = None
+    OXAPAY_WEBHOOK_SECRET: Optional[str] = None
 
     # Storage
     UPLOAD_DIR: str = "static/watermarks"
