@@ -1,11 +1,11 @@
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, field_validator
 from typing import Optional
 from datetime import datetime
 from ..models.user import SubscriptionTier
 
 
 class UserBase(BaseModel):
-    email: EmailStr
+    email: str  # Changed from EmailStr to str
     username: str
 
 
@@ -34,20 +34,42 @@ class UserCreate(UserBase):
             )
         return v
 
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        # Basic email validation without email-validator
+        if "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("Invalid email format")
+        return v.lower()
+
 
 class UserUpdate(BaseModel):
     username: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None  # Changed from EmailStr to str
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            if "@" not in v or "." not in v.split("@")[-1]:
+                raise ValueError("Invalid email format")
+            return v.lower()
+        return v
 
 
 class PasswordChange(BaseModel):
     current_password: str
     new_password: str
 
-    @validator("new_password")
-    def validate_new_password(cls, v):
+    @field_validator("new_password")  # Fixed: was using old 'validator'
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")
+        if not any(char.isdigit() for char in v):
+            raise ValueError("Password must contain at least one digit")
+        if not any(char.isupper() for char in v):
+            raise ValueError("Password must contain at least one uppercase letter")
         return v
 
 
@@ -80,41 +102,3 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: Optional[str] = None
-
-
-# File: backend/app/schemas/watermark.py
-
-from pydantic import BaseModel, validator
-from typing import Optional, Dict, Any
-from datetime import datetime
-
-
-class WatermarkCreate(BaseModel):
-    watermark_text: str
-
-    @validator("watermark_text")
-    def validate_watermark_text(cls, v):
-        if not v or not v.strip():
-            raise ValueError("Watermark text cannot be empty")
-        if len(v) > 50:
-            raise ValueError("Watermark text must be 50 characters or less")
-        return v.strip()
-
-
-class WatermarkResponse(BaseModel):
-    id: int
-    user_id: int
-    original_image_url: str
-    watermarked_image_url: str
-    watermark_text: str
-    ai_analysis: Optional[Dict[str, Any]]
-    placement_data: Optional[Dict[str, Any]]
-    image_width: Optional[int]
-    image_height: Optional[int]
-    file_size: Optional[int]
-    processing_time: Optional[int]
-    created_at: datetime
-
-    class Config:
-        orm_mode = True
-        from_attributes = True
