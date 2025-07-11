@@ -1,4 +1,5 @@
 # backend/app/core/config.py
+
 from pydantic_settings import BaseSettings
 from typing import List, Optional
 import json
@@ -7,7 +8,7 @@ class Settings(BaseSettings):
     # Application
     APP_NAME: str = "AI Watermark System"
     VERSION: str = "1.0.0"
-    DEBUG: bool = False  # Changed to False for production
+    DEBUG: bool = False
 
     # Security
     SECRET_KEY: str
@@ -17,8 +18,13 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
 
-    # CORS - Parse JSON string
-    CORS_ORIGINS: List[str] = ["http://localhost:5173"]
+    # CORS - WICHTIG: Diese URLs müssen EXAKT mit deinen Render URLs übereinstimmen!
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://watermark-ai-frontend.onrender.com",  # DEINE FRONTEND URL
+        "https://watermark-frontend.onrender.com",     # Alternative falls anders
+    ]
 
     # Google OAuth
     GOOGLE_CLIENT_ID: str = "dummy-client-id"
@@ -51,19 +57,20 @@ class Settings(BaseSettings):
     ELITE_MAX_RESOLUTION: int = 2160
 
     # URLs
-    FRONTEND_URL: str = "http://localhost:5173"
-    API_URL: str = "http://localhost:8000"
+    FRONTEND_URL: str = "https://watermark-ai-frontend.onrender.com"
+    API_URL: str = "https://watermark-backend-a4l8.onrender.com"
 
     class Config:
         env_file = ".env"
         
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Parse CORS_ORIGINS if it's a JSON string
+        # Parse CORS_ORIGINS if it's a JSON string from environment
         if isinstance(self.CORS_ORIGINS, str):
             try:
                 self.CORS_ORIGINS = json.loads(self.CORS_ORIGINS)
             except:
-                self.CORS_ORIGINS = [self.CORS_ORIGINS]
+                # If not JSON, treat as comma-separated list
+                self.CORS_ORIGINS = [origin.strip() for origin in self.CORS_ORIGINS.split(',')]
 
 settings = Settings()
