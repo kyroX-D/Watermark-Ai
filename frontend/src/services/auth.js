@@ -1,15 +1,10 @@
 import api from './api'
 
-login: async (email, password) => {
-  // Statt an den Server zu senden, einfach fake zurückgeben
-  return {
-    access_token: "fake-token",
-    user: {
-      email: "test@example.com",
-      id: 123,
-    },
-  }
-
+export const authService = {
+  login: async (email, password) => {
+    const formData = new FormData()
+    formData.append('username', email)
+    formData.append('password', password)
     
     const response = await api.post('/auth/login', formData, {
       headers: {

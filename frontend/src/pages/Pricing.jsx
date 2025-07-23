@@ -46,7 +46,7 @@ const plans = [
   {
     id: "elite",
     name: "Elite",
-    price: "€50",
+    price: "€120",
     period: "per month",
     icon: Crown,
     features: [
