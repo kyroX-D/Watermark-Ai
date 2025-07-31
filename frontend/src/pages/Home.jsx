@@ -140,7 +140,7 @@ export default function Home() {
             Ready to Protect Your Images?
           </h2>
           <p className="text-xl mb-8 opacity-90">
-            Join thousands of creators using AI-powered watermarks
+            Start protecting your work with AI watermarks
           </p>
           <Link
             to="/register"
